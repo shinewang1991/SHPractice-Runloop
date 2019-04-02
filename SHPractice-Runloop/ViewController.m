@@ -15,6 +15,7 @@ typedef void(^LoadImageBlock)(void);
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) NSMutableArray<LoadImageBlock> *tasks;
 @property (nonatomic, strong) NSTimer *timer;
+@property (nonatomic, strong) NSDate *lastDate;
 @end
 
 @implementation ViewController
@@ -83,20 +84,28 @@ typedef void(^LoadImageBlock)(void);
         &CFRelease,
         NULL
     };
-    CFRunLoopObserverRef observer = CFRunLoopObserverCreate(kCFAllocatorDefault, kCFRunLoopBeforeWaiting, YES, 0, &observerCallBack, &context);
+    CFRunLoopObserverRef observer = CFRunLoopObserverCreate(kCFAllocatorDefault, kCFRunLoopBeforeWaiting|kCFRunLoopEntry|kCFRunLoopExit, YES, 0, &observerCallBack, &context);
     CFRunLoopAddObserver(runloop, observer, kCFRunLoopCommonModes);
     CFRelease(observer);
 }
 
 void observerCallBack(CFRunLoopObserverRef observer, CFRunLoopActivity activity, void *info){
     ViewController *viewController = (__bridge ViewController *)info;
-    if(viewController.tasks.count > 0){
-        LoadImageBlock block =  [viewController.tasks firstObject];
-        if(block){
-            block();
-            NSLog(@"开始加载图片了。一共有%ld张图片",viewController.tasks.count);
+    if(activity == kCFRunLoopEntry){
+        NSLog(@"runloop进入了");
+    }
+    else if(activity == kCFRunLoopExit){
+        NSLog(@"runloop退出了");
+    }
+    else if(activity == kCFRunLoopBeforeWaiting){
+        if(viewController.tasks.count > 0){
+            LoadImageBlock block =  [viewController.tasks firstObject];
+            if(block){
+                block();
+                NSLog(@"开始加载图片了。一共有%ld张图片",viewController.tasks.count);
+            }
+            [viewController.tasks removeObjectAtIndex:0];
         }
-        [viewController.tasks removeObjectAtIndex:0];
     }
 }
 @end
